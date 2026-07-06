@@ -1,0 +1,5 @@
+# Udev rule: let a normal user write to the WINWING PTO2 panel's LEDs (hidraw).
+# Install:  sudo cp 99-winwing.rules /etc/udev/rules.d/
+#           sudo udevadm control --reload-rules && sudo udevadm trigger
+#           then unplug & replug the panel.
+SUBSYSTEM=="hidraw", ATTRS{idVendor}=="4098", ATTRS{idProduct}=="bf05", MODE="0666", TAG+="uaccess"

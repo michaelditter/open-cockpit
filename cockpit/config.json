@@ -1,0 +1,45 @@
+{
+  "_readme": "This is YOUR ship. Edit everything below, then restart the cockpit (or reboot the Pi). Crew photos go in cockpit/crew/<id>.jpg. If you put your family's real names here, keep them out of any public fork.",
+  "ship_name": "ODYSSEY",
+  "ship_name_spoken": "Odyssey",
+  "saver_title": "DEEP FIELD · UNCHARTED SPACE",
+  "montage_title": "OUR CREW • EXPLORERS OF THE STARS",
+  "crew": [
+    {
+      "id": "captain",
+      "name": "Alex",
+      "age": 9,
+      "callsign": "FALCON",
+      "emoji": "🦅",
+      "role": "Mission Commander",
+      "school": "Junior Flight Academy",
+      "galaxy": "Whirlpool Galaxy",
+      "specialty": "Black-hole slalom champion",
+      "motto": "To the stars — send it!"
+    },
+    {
+      "id": "engineer",
+      "name": "Sam",
+      "age": 7,
+      "callsign": "WRENCH",
+      "emoji": "🔧",
+      "role": "Flight Engineer",
+      "school": "Orbital Engineering School",
+      "galaxy": "Bode's Galaxy",
+      "specialty": "Hydrogen fuel-cell wizard",
+      "motto": "If it breaks, I fix it in zero-g!"
+    },
+    {
+      "id": "science",
+      "name": "Nova",
+      "age": 4,
+      "callsign": "STARDUST",
+      "emoji": "🔭",
+      "role": "Science Officer",
+      "school": "Twinkle-Star Academy",
+      "galaxy": "Pinwheel Galaxy",
+      "specialty": "Comet cataloguing",
+      "motto": "Twinkle twinkle, found a star!"
+    }
+  ]
+}

@@ -1,0 +1,53 @@
+{
+  "_comment": "Open Cockpit \u2014 evdev code -> sound id, defaults for the WINWING PTO2. 709 loops until 289 stops it. Re-map any panel with: panel_sounds.py --wizard",
+  "device_match": [
+    "winwing",
+    "pto",
+    "orion",
+    "takeoff"
+  ],
+  "default_sound": null,
+  "play_on": "press",
+  "abs_threshold": 12000,
+  "loop_codes": {
+    "709": "289"
+  },
+  "bindings": {
+    "722": "gear_up",
+    "724": "gear_down",
+    "289": "silence_alarms",
+    "288": "jettison",
+    "291": "launchbar_extend",
+    "290": "launchbar_retract",
+    "295": "taxi_lights_on",
+    "296": "taxi_lights_off",
+    "300": "hook_bypass_carrier",
+    "299": "hook_bypass_field",
+    "301": "probe_extend",
+    "302": "probe_neutral",
+    "303": "probe_emergency",
+    "297": "antiskid_on",
+    "298": "antiskid_off",
+    "293": "flap_half",
+    "294": "flap_full",
+    "292": "flap_auto",
+    "727": "emergency_hyperjump_brake",
+    "709": "jettison_alarm",
+    "705": "seljett_safe",
+    "704": "seljett_left_fuel",
+    "706": "seljett_right_fuel",
+    "707": "seljett_escape_pod",
+    "708": "seljett_stores",
+    "721": "hook_in_blackhole",
+    "719": "hook_out_blackhole",
+    "720": "hook_neutral",
+    "710": "master_engine",
+    "711": "left_engine_on",
+    "712": "right_engine_on",
+    "713": "left_engine_off",
+    "714": "right_engine_off",
+    "717": "wing_spread",
+    "716": "wing_hold",
+    "715": "wing_fold"
+  }
+}
