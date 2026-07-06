@@ -1,0 +1,35 @@
+# Python
+__pycache__/
+*.pyc
+.venv/
+cockpit/cockpit.log
+
+# ---------------------------------------------------------------
+# PERSONAL MEDIA — generated per-family, never committed.
+# If you fork this and add your own crew, these rules keep your
+# kids' names, photos, and voices out of your public repo.
+# ---------------------------------------------------------------
+sounds/*
+!sounds/README.md
+cockpit/crew/*
+!cockpit/crew/README.md
+cockpit/videos/*
+!cockpit/videos/README.md
+cockpit/stills/*
+!cockpit/stills/README.md
+cockpit/screensaver/*
+!cockpit/screensaver/README.md
+cockpit/montage/*
+!cockpit/montage/README.md
+cockpit/greenhouse/*
+!cockpit/greenhouse/README.md
+cockpit/outside/*
+!cockpit/outside/README.md
+cockpit/missions/*
+!cockpit/missions/README.md
+cockpit/montage_anthem.mp3
+*.wav
+
+# OS noise
+.DS_Store
+Thumbs.db
