@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Open Cockpit — turn a closet into a starship bridge</title>
+<meta name="description" content="A real flight-sim panel + a Raspberry Pi + AI voice lines = a fully alive spaceship cockpit for kids. Open source. ~$300. No gaming PC required.">
+<meta property="og:title" content="Open Cockpit — turn a closet into a starship bridge">
+<meta property="og:description" content="Every switch talks back in a movie-trailer voice, lights real LEDs, and drives a living bridge display. Build one for your crew.">
+<style>
+  :root{ --neon:#43e0ff; --green:#3ad07a; --red:#ff3b3b; --gold:#ffd66b; --edge:#1e3850;
+         --panel:rgba(9,18,30,.78); --ink:#dff3ff; --dim:#7fb8da; }
+  *{ box-sizing:border-box; margin:0; padding:0; }
+  html{ scroll-behavior:smooth; }
+  body{ background:#02040a; color:var(--ink); font-family:ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif; line-height:1.6; }
+  #stars{ position:fixed; inset:0; z-index:0; }
+  .vig{ position:fixed; inset:0; z-index:1; pointer-events:none; box-shadow:inset 0 0 260px 70px rgba(0,0,0,.85); }
+  #redalert{ position:fixed; inset:0; z-index:2; pointer-events:none; opacity:0; box-shadow:inset 0 0 300px 100px rgba(255,30,30,.8); transition:opacity .4s; }
+  main{ position:relative; z-index:3; max-width:980px; margin:0 auto; padding:0 22px 90px; }
+  a{ color:var(--neon); }
+  h1,h2,h3{ letter-spacing:2px; }
+  code,pre{ font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; }
+  pre{ background:#050d16; border:1px solid var(--edge); border-radius:10px; padding:14px 16px; overflow-x:auto; font-size:13.5px; line-height:1.55; }
+  code{ background:#0b1826; padding:1px 6px; border-radius:5px; font-size:.92em; }
+  pre code{ background:none; padding:0; }
+  .cmt{ color:#4d7a99; }
+
+  /* hero */
+  header{ min-height:88vh; display:flex; flex-direction:column; justify-content:center; text-align:center; padding:70px 0 40px; }
+  .kicker{ font-size:12px; letter-spacing:6px; color:var(--gold); margin-bottom:18px; }
+  h1{ font-size:clamp(34px,6vw,62px); font-weight:900; line-height:1.12;
+      background:linear-gradient(90deg,#43e0ff,#9b8cff,#ffd66b); -webkit-background-clip:text; background-clip:text; color:transparent;
+      text-shadow:0 0 40px rgba(67,224,255,.18); }
+  .sub{ margin:22px auto 0; max-width:640px; color:var(--dim); font-size:clamp(15px,2vw,18px); }
+  .ctas{ margin-top:34px; display:flex; gap:14px; justify-content:center; flex-wrap:wrap; }
+  .btn{ display:inline-block; padding:13px 26px; border-radius:10px; font-weight:700; letter-spacing:1px; text-decoration:none; font-size:15px; }
+  .btn.primary{ background:var(--neon); color:#02131c; box-shadow:0 0 26px rgba(67,224,255,.35); }
+  .btn.ghost{ border:1px solid var(--edge); color:var(--ink); background:var(--panel); }
+  .heroline{ margin-top:46px; font-size:12.5px; letter-spacing:2px; color:#3a6a86; }
+
+  section{ margin-top:90px; }
+  .ph{ font-size:11px; letter-spacing:4px; color:#5fa8d6; margin-bottom:8px; }
+  h2{ font-size:clamp(24px,3.6vw,34px); font-weight:800; margin-bottom:18px; }
+  p.lead{ color:var(--dim); max-width:720px; }
+
+  .grid{ display:grid; grid-template-columns:repeat(auto-fit,minmax(260px,1fr)); gap:14px; margin-top:26px; }
+  .card{ background:var(--panel); border:1px solid var(--edge); border-radius:14px; padding:20px; backdrop-filter:blur(2px); }
+  .card h3{ font-size:16px; margin-bottom:8px; color:#eafaff; }
+  .card p{ font-size:14px; color:var(--dim); }
+  .card .em{ font-size:26px; margin-bottom:10px; }
+
+  /* demo bridge */
+  .bridge{ background:var(--panel); border:1px solid var(--edge); border-radius:16px; padding:22px; margin-top:26px; position:relative; overflow:hidden; }
+  .screenwrap{ text-align:center; padding:34px 10px 26px; border:1px solid var(--edge); border-radius:12px; background:rgba(2,6,12,.6); position:relative; }
+  #demoship{ font-size:72px; line-height:1; display:inline-block; transition:transform .6s cubic-bezier(.2,.8,.2,1); filter:drop-shadow(0 0 26px rgba(67,224,255,.5)); }
+  #democall{ margin-top:14px; font-size:clamp(17px,2.6vw,26px); font-weight:800; letter-spacing:2px; min-height:34px; text-shadow:0 0 22px rgba(67,224,255,.5); }
+  #demosub{ margin-top:8px; font-size:13px; color:var(--dim); font-style:italic; min-height:40px; max-width:640px; margin-left:auto; margin-right:auto; }
+  .alertb{ position:absolute; top:10px; left:50%; transform:translateX(-50%); font-size:13px; font-weight:900; letter-spacing:4px; color:#fff; background:#c01010; padding:5px 16px; border-radius:6px; display:none; box-shadow:0 0 24px rgba(255,40,40,.8); }
+  .alertb.on{ display:block; animation:blink .6s steps(1) infinite; }
+  @keyframes blink{ 50%{ background:#3a0000; color:#ff8a8a; } }
+  .switches{ display:flex; flex-wrap:wrap; gap:9px; justify-content:center; margin-top:18px; }
+  .sw{ font-size:11.5px; letter-spacing:1px; padding:10px 14px; border-radius:8px; background:#0e1c2c; border:1px solid #244257; color:#bfe2f5; cursor:pointer; transition:all .15s; font-weight:600; }
+  .sw:hover{ border-color:var(--neon); color:#eafff9; box-shadow:0 0 14px rgba(67,224,255,.35); }
+  .sw.danger{ border-color:#5a2430; }
+  .sw.danger:hover{ border-color:var(--red); box-shadow:0 0 14px rgba(255,59,59,.4); }
+  .demo-note{ text-align:center; margin-top:14px; font-size:12px; color:#3a6a86; letter-spacing:1px; }
+
+  table{ width:100%; border-collapse:collapse; margin-top:22px; font-size:14.5px; }
+  th,td{ text-align:left; padding:11px 12px; border-bottom:1px solid rgba(30,56,80,.6); vertical-align:top; }
+  th{ color:#5fa8d6; font-size:11px; letter-spacing:2px; }
+  td b{ color:#eafaff; }
+  td .muted{ color:var(--dim); font-size:13px; }
+  .right{ text-align:right; white-space:nowrap; color:var(--gold); }
+
+  .steps{ counter-reset:s; margin-top:26px; display:flex; flex-direction:column; gap:14px; }
+  .step{ background:var(--panel); border:1px solid var(--edge); border-radius:14px; padding:20px 20px 20px 66px; position:relative; }
+  .step::before{ counter-increment:s; content:counter(s,decimal-leading-zero); position:absolute; left:20px; top:20px;
+      font-weight:900; font-size:20px; color:var(--gold); text-shadow:0 0 14px rgba(255,214,107,.4); }
+  .step h3{ font-size:16px; margin-bottom:6px; }
+  .step p{ font-size:14px; color:var(--dim); margin-bottom:8px; }
+  .step pre{ margin-top:8px; }
+
+  .arch{ margin-top:26px; }
+  .arch pre{ font-size:12.5px; color:#9fd0ee; }
+
+  .privacy{ border:1px solid #2b4a2f; background:rgba(8,22,12,.7); border-radius:14px; padding:22px; margin-top:26px; }
+  .privacy h3{ color:#7dffb0; letter-spacing:2px; font-size:15px; margin-bottom:8px; }
+  .privacy p{ font-size:14px; color:#a9d8c0; }
+
+  details{ background:var(--panel); border:1px solid var(--edge); border-radius:12px; padding:16px 18px; margin-top:10px; }
+  summary{ cursor:pointer; font-weight:700; font-size:15px; color:#eafaff; }
+  details p{ margin-top:10px; font-size:14px; color:var(--dim); }
+
+  footer{ margin-top:100px; text-align:center; font-size:13px; color:#3a6a86; letter-spacing:1px; }
+  footer a{ color:#5fa8d6; }
+  .comboTable td:first-child{ font-size:13px; color:#9fd0ee; }
+</style>
+</head>
+<body>
+<canvas id="stars"></canvas>
+<div class="vig"></div>
+<div id="redalert"></div>
+<main>
+
+<header>
+  <div class="kicker">OPEN SOURCE &middot; RASPBERRY PI &middot; ~$300 &middot; NO GAMING PC</div>
+  <h1>Turn a closet into<br>a starship bridge.</h1>
+  <p class="sub">A real flight-sim switch panel, a Raspberry Pi, and AI-generated voice lines — every switch your kids flip <b>talks back in a movie-trailer voice</b>, lights real LEDs, and drives a living starship display. This site shows you how to build one. All the code is free.</p>
+  <div class="ctas">
+    <a class="btn primary" href="https://github.com/michaelditter/open-cockpit">Get the code on GitHub</a>
+    <a class="btn ghost" href="#build">Build guide ↓</a>
+  </div>
+  <div class="heroline">SCROLL FOR PRE-FLIGHT CHECKS ▾</div>
+</header>
+
+<section id="what">
+  <div class="ph">MISSION BRIEF</div>
+  <h2>What you're building</h2>
+  <p class="lead">A WINWING PTO2 panel — landing gear lever, flaps, engine switches, and a guarded red JETTISON button — plugs into a Raspberry Pi. One Python program reads every switch, plays a cinematic callout with <b>your kids' names in it</b>, drives the panel's physical warning lights, and serves a full-screen bridge to any TV. After setup it runs entirely offline. Power on the Pi, and the room is a spaceship.</p>
+  <div class="grid">
+    <div class="card"><div class="em">🎙️</div><h3>Every control talks</h3><p>36 scripted voice lines rendered with your crew's names via the ElevenLabs API. A looping jettison alarm blares until someone flips SILENCE ALARMS.</p></div>
+    <div class="card"><div class="em">💡</div><h3>Real lights</h3><p>Gear lamps, master caution, flap & hook LEDs driven directly over USB HID on Linux — reverse-engineered by the community, no Windows software needed.</p></div>
+    <div class="card"><div class="em">🖥️</div><h3>A living bridge</h3><p>Warp-reactive starfield, telemetry gauges, tactical radar, a 30-object galactic database with real astronomy, energy schematic, and crew cards for your astronauts.</p></div>
+    <div class="card"><div class="em">🕹️</div><h3>Secret missions</h3><p>Flip the right sequence of controls and a full-screen cinematic takes over: launch, black-hole slingshot, asteroid run, escape-pod rescue.</p></div>
+    <div class="card"><div class="em">🌌</div><h3>Deep-field screensaver</h3><p>Idle for 75 seconds and the bridge drifts through 30 named space vistas at half speed. Any switch snaps it back to the bridge.</p></div>
+    <div class="card"><div class="em">🔒</div><h3>Private by design</h3><p>Your family's names, photos, and voices live only on your Pi. The repo ships with a fictional demo crew and gitignores all personal media.</p></div>
+  </div>
+</section>
+
+<section id="demo">
+  <div class="ph">TRY IT</div>
+  <h2>Flip a switch</h2>
+  <p class="lead">This is a tiny taste of the real bridge UI (same code style, same reactions). On the actual build, each of these also plays a voice line through the room and lights the physical panel.</p>
+  <div class="bridge">
+    <div class="screenwrap">
+      <div class="alertb" id="demoalert">⚠ RED ALERT</div>
+      <div id="demoship">🚀</div>
+      <div id="democall">ALL SYSTEMS GO</div>
+      <div id="demosub">flip a switch, crew — the galaxy awaits</div>
+    </div>
+    <div class="switches">
+      <button class="sw" data-fx="ascend" data-call="LANDING GEAR UP" data-line="“Landing gear, retracting. Hold on tight, crew. Captain Alex, Commander Sam, Specialist Nova — the Odyssey is breaking for orbit.”">GEAR UP</button>
+      <button class="sw" data-fx="warp" data-call="MASTER ENGINE" data-line="“Master engine, online! Hydrogen fuel cells at full charge. The Odyssey crew is go for hyper drive!”">MASTER ENGINE</button>
+      <button class="sw" data-fx="shake" data-call="FLAPS FULL" data-line="“Flaps, full! Hard maneuver, Nova — watch out for those meteors!”">FLAPS FULL</button>
+      <button class="sw" data-fx="swirl" data-call="BLACK HOLE HYPER-LOOP" data-line="“Engaging the black hole hyper-loop! Everyone strap in — gravimetric shear incoming!”">HOOK IN — BLACK HOLE</button>
+      <button class="sw danger" data-fx="alert" data-call="EMERGENCY JETTISON" data-line="“Emergency jettison! Ejection sequence armed! Caution: extreme danger!”">JETTISON</button>
+      <button class="sw" data-fx="calm" data-call="ALARMS SILENCED" data-line="“Emergency alarms, silenced. Deep breath, crew. All systems holding steady.”">SILENCE ALARMS</button>
+    </div>
+    <div class="demo-note">IN THE REAL ROOM: + BOOMING TRAILER VOICE + PHYSICAL LEDS + A FOUR-YEAR-OLD YELLING "RED ALERT"</div>
+  </div>
+</section>
+
+<section id="hardware">
+  <div class="ph">PARTS LOCKER</div>
+  <h2>Hardware — roughly $300 all-in</h2>
+  <p class="lead">Three required parts plus a screen you already own. Everything else is set dressing. Full list with alternatives in <a href="https://github.com/michaelditter/open-cockpit/blob/main/HARDWARE.md">HARDWARE.md</a>.</p>
+  <table>
+    <tr><th>PART</th><th>ROLE</th><th class="right">APPROX.</th></tr>
+    <tr><td><b>WINWING PTO2</b> "Panel of Take Off"<div class="muted">Gear lever, flaps, hook, engine switches, guarded jettison button, real LEDs</div></td><td>The switches — the heart of it</td><td class="right">$100–130</td></tr>
+    <tr><td><b>Raspberry Pi 4</b> + 32GB microSD + PSU<div class="muted">2GB RAM is plenty; a Pi 5 also works</div></td><td>The brain</td><td class="right">$60–120</td></tr>
+    <tr><td><b>USB speakers</b> (e.g. Creative Pebble V3)<div class="muted">One USB cable = power + audio from the Pi</div></td><td>The voice of the ship</td><td class="right">~$40</td></tr>
+    <tr><td><b>Any HDMI TV / monitor / old tablet</b></td><td>The viewscreen</td><td class="right">$0</td></tr>
+    <tr><td><b>Optional theatrics</b><div class="muted">Galaxy wallpaper, aluminum "life-support" ducting, astronaut costume, foam edge padding</div></td><td>The room</td><td class="right">$50–150</td></tr>
+  </table>
+  <p class="lead" style="margin-top:14px;font-size:13.5px;">⚠️ Buy the panel from the <a href="https://winwingsim.com">official WINWING store</a> — marketplace listings are frequently scalped at 2–3× price. Different panel? Any USB HID button box works for sounds; the mapping wizard handles it.</p>
+</section>
+
+<section id="how">
+  <div class="ph">SCHEMATIC</div>
+  <h2>How it works</h2>
+  <p class="lead">One Python process does everything. No cloud, no accounts, no subscriptions after the one-time voice generation.</p>
+  <div class="arch"><pre>
+ WINWING PTO2 ──USB──► Raspberry Pi 4
+   switches                │
+   (evdev input) ──► panel_web.py ──► pygame/ALSA ──► USB speakers
+                           │  ▲                       (voice lines)
+   LEDs ◄──USB HID─────────┘  │
+   (raw hidraw writes)        │  config.json      — your ship + crew
+                              │  mapping.json     — switch → sound
+                              │  voice_lines.json — the 36 scripts
+                              ▼
+                    HTTP + Server-Sent Events
+                              ▼
+                 Chromium kiosk — the bridge UI
+           starfield · telemetry · radar · missions · red alerts</pre></div>
+</section>
+
+<section id="build">
+  <div class="ph">PRE-FLIGHT</div>
+  <h2>The build, in six steps</h2>
+  <p class="lead">A relaxed afternoon. The <a href="https://github.com/michaelditter/open-cockpit/blob/main/SETUP_GUIDE.md">full guide</a> covers every command, flashing the SD card, audio config, and troubleshooting.</p>
+  <div class="steps">
+    <div class="step"><h3>Flash the Pi</h3><p>Raspberry Pi OS (64-bit) via Raspberry Pi Imager. Set hostname, Wi-Fi, and SSH in the imager's settings screen.</p></div>
+    <div class="step"><h3>Clone the project</h3>
+<pre><code>git clone https://github.com/michaelditter/open-cockpit.git ~/open-cockpit
+cd ~/open-cockpit/cockpit</code></pre></div>
+    <div class="step"><h3>Name your ship & crew</h3><p>Edit <code>config.json</code> — ship name, kids' names, callsigns, mottos. This one file drives the bridge display and the voice pack.</p></div>
+    <div class="step"><h3>Generate the voice pack</h3><p>36 cinematic lines rendered with your crew's names. Pick any ElevenLabs voice — booming trailer narrators work brilliantly. (No ElevenLabs? Record grandpa instead. Honestly better.)</p>
+<pre><code>export ELEVENLABS_API_KEY=sk_...
+python3 generate_sounds.py --dry-run   <span class="cmt"># preview the scripts</span>
+python3 generate_sounds.py             <span class="cmt"># render ../sounds/*.mp3</span></code></pre></div>
+    <div class="step"><h3>Install & map your switches</h3>
+<pre><code>bash install.sh                              <span class="cmt"># deps + MP3→WAV for low latency</span>
+sudo cp 99-winwing.rules /etc/udev/rules.d/  <span class="cmt"># LEDs without root (then replug)</span>
+.venv/bin/python panel_sounds.py --wizard    <span class="cmt"># press a switch for each sound</span></code></pre>
+<p>PTO2 owners can skip the wizard — the repo ships pre-mapped for it.</p></div>
+    <div class="step"><h3>Fly, then make it permanent</h3>
+<pre><code>.venv/bin/python panel_web.py    <span class="cmt"># bridge at http://cockpit.local:8080</span>
+bash install_kiosk.sh && sudo reboot   <span class="cmt"># boots straight into the cockpit forever</span></code></pre></div>
+  </div>
+</section>
+
+<section id="combos">
+  <div class="ph">CLASSIFIED</div>
+  <h2>Secret combos</h2>
+  <p class="lead">Don't tell the crew. Let them discover these.</p>
+  <table class="comboTable">
+    <tr><th>SEQUENCE</th><th>RESULT</th></tr>
+    <tr><td>Same control, 3× fast</td><td>Family montage + anthem takes over the screen</td></tr>
+    <tr><td>Lights OFF → ON → OFF</td><td>Deep-field screensaver</td></tr>
+    <tr><td>Engines L+R → Master → Launch bar → Full flaps → Gear up → Wings spread</td><td>🚀 LAUNCH cinematic</td></tr>
+    <tr><td>Hook IN → Master engine → Wings fold → Anti-skid → Hook OUT</td><td>🌀 Black-hole slingshot</td></tr>
+    <tr><td>Jettison alarm → Stores → L fuel → R fuel → Escape pod → Silence</td><td>🛟 Escape-pod rescue</td></tr>
+  </table>
+</section>
+
+<section id="privacy">
+  <div class="ph">CREW SAFETY</div>
+  <h2>Your kids stay off the internet</h2>
+  <div class="privacy">
+    <h3>PRIVACY BY DESIGN</h3>
+    <p>The repo ships with a fictional demo crew — Alex, Sam & Nova of the ODYSSEY. Your family's identity lives in one local file (<code>config.json</code>) plus media folders that are <b>gitignored by default</b>: generated voice lines, crew photos, and family montage content never leave your Pi, even if you fork the project publicly. If you photograph your build to share, check what's on the screen first — your ship name renders there.</p>
+  </div>
+</section>
+
+<section id="faq">
+  <div class="ph">COMMS</div>
+  <h2>FAQ</h2>
+  <details><summary>Do I need a gaming PC or a flight simulator?</summary><p>No. That's the point. The panel plugs into the Pi and the Pi does everything — sounds, lights, display. (USB is point-to-point, so if you also want the panel to fly a sim on a PC, run the sounds script on that PC instead.)</p></details>
+  <details><summary>Does it work with panels other than the WINWING PTO2?</summary><p>For sounds and the bridge: yes — any USB HID device the Linux kernel exposes (button boxes, throttles, joysticks). Run <code>panel_sounds.py --wizard</code> to map it. Physical LED control is PTO2-specific today; ports to other panels are welcome pull requests.</p></details>
+  <details><summary>What does it cost to run?</summary><p>Nothing recurring. The ElevenLabs voice generation is a one-time job (a starter plan covers the whole 36-line pack; regenerate whenever you like). After that the cockpit is fully offline — optional space imagery loads from Wikimedia when online.</p></details>
+  <details><summary>How hard is the build, really?</summary><p>If you can flash an SD card and paste terminal commands, you can build this. There's no soldering, no wiring, no 3D printing. The hardest part is not spoiling the secret combos.</p></details>
+  <details><summary>Can I write my own voice lines?</summary><p>Yes — <code>voice_lines.json</code> holds all 36 scripts with <code>{c1}/{c2}/{c3}/{ship}</code> name tokens. Edit any line and re-render just that one with <code>generate_sounds.py --only gear_up</code>. Or skip AI entirely and record your own MP3s.</p></details>
+  <details><summary>What's next for the project?</summary><p>A voice-interactive ship computer (push-to-talk → speech-to-text → LLM → ElevenLabs, aware of ship state), a stateful mission engine with per-kid ranks and weekly AI-generated missions, live ISS and launch data on the bridge, and WLED room-lighting sync. Star the repo to follow along.</p></details>
+</section>
+
+<section style="text-align:center;">
+  <h2 style="margin-top:20px;">Build one for your crew.</h2>
+  <div class="ctas">
+    <a class="btn primary" href="https://github.com/michaelditter/open-cockpit">github.com/michaelditter/open-cockpit</a>
+  </div>
+</section>
+
+<footer>
+  MIT licensed · Built by a dad, three small astronauts, and Claude ·
+  LED protocol credit to the <a href="https://github.com/schenlap/winwing_fcu">community reverse-engineering projects</a><br><br>
+  <span style="letter-spacing:3px;">FLY SAFE 🖖</span>
+</footer>
+</main>
+
+<script>
+// starfield with warp
+const cv=document.getElementById('stars'),cx=cv.getContext('2d');
+let W,H,stars=[],warp=0;
+function rs(){W=cv.width=innerWidth;H=cv.height=innerHeight;}
+addEventListener('resize',rs);rs();
+for(let i=0;i<200;i++)stars.push({x:(Math.random()-.5)*W,y:(Math.random()-.5)*H,z:Math.random()*W});
+(function draw(){
+  cx.fillStyle='#02040a';cx.fillRect(0,0,W,H);
+  cx.save();cx.translate(W/2,H/2);const sp=1.2+warp*38;
+  for(const s of stars){s.z-=sp;if(s.z<1){s.z=W;s.x=(Math.random()-.5)*W;s.y=(Math.random()-.5)*H;}
+    const k=128/s.z,x=s.x*k,y=s.y*k,k2=128/(s.z+sp),px=s.x*k2,py=s.y*k2;
+    cx.strokeStyle='rgba(150,225,255,'+(1-s.z/W)+')';cx.lineWidth=(1-s.z/W)*2;
+    cx.beginPath();cx.moveTo(px,py);cx.lineTo(x,y);cx.stroke();}
+  cx.restore();if(warp>0)warp*=.95;if(warp<.01)warp=0;requestAnimationFrame(draw);
+})();
+
+// mini bridge demo
+const SHIP={ascend:'🚀',warp:'🚀',shake:'☄️',swirl:'🌀',alert:'💥',calm:'🪐'};
+const ship=document.getElementById('demoship'),call=document.getElementById('democall'),
+      sub=document.getElementById('demosub'),ra=document.getElementById('redalert'),
+      ab=document.getElementById('demoalert');
+let alertOn=false;
+document.querySelectorAll('.sw').forEach(b=>b.addEventListener('click',()=>{
+  const fx=b.dataset.fx;
+  call.textContent=b.dataset.call; sub.textContent=b.dataset.line;
+  ship.textContent=SHIP[fx]||'🚀';
+  let tf='none';
+  if(fx==='ascend')tf='translateY(-30px) rotate(-12deg) scale(1.15)';
+  else if(fx==='warp'){warp=1;tf='scale(1.35)';}
+  else if(fx==='swirl'){warp=.6;tf='rotate(360deg) scale(1.15)';}
+  else if(fx==='shake'){tf='scale(1.1)';shakeIt();}
+  else if(fx==='alert'){tf='scale(1.3)';alertOn=true;ra.style.opacity=.85;ab.classList.add('on');shakeIt();}
+  else if(fx==='calm'){alertOn=false;ra.style.opacity=0;ab.classList.remove('on');}
+  ship.style.transform=tf;setTimeout(()=>{ship.style.transform='none';},1200);
+  if(alertOn&&fx!=='alert'&&fx!=='calm'){/* stay red until silenced */}
+}));
+function shakeIt(){const w=document.querySelector('.bridge');let n=0;
+  const t=setInterval(()=>{n++;w.style.transform='translate('+(Math.random()*8-4)+'px,'+(Math.random()*8-4)+'px)';
+  if(n>8){clearInterval(t);w.style.transform='none';}},50);}
+</script>
+</body>
+</html>
